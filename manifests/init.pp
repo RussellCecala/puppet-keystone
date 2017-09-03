@@ -740,10 +740,7 @@ class keystone(
   $enable_fernet_setup                  = false,
   $fernet_key_repository                = '/etc/keystone/fernet-keys',
   $fernet_max_active_keys               = $::os_service_default,
-# This is now a fact  $fernet_keys                          = false,
-# Begin TA265938 - Fernet Key distribution and rotation
   $fernet_key_master                    = $::hostname,
-# End TA265938 - Fernet Key distribution and rotation
   $enable_credential_setup              = false,
   $credential_key_repository            = '/etc/keystone/credential-keys',
   $credential_keys                      = false,
@@ -1149,7 +1146,6 @@ running as a standalone service, or httpd for being run by a httpd server")
       subscribe => Anchor['keystone::install::end'],
     })
 
-# Begin TA265938 - Fernet Key distribution and rotation
     if $::hostname == $fernet_key_master {
       unless empty($fernet_keys) {
         validate_hash($fernet_keys)
@@ -1167,7 +1163,6 @@ running as a standalone service, or httpd for being run by a httpd server")
         #
         File <<| tag == 'fernet_key' |>>
       } else { # We have not generated fernet keys yet. 
-# End TA265938 - Fernet Key distribution and rotation
         exec { 'keystone-manage fernet_setup':
           command     => "keystone-manage fernet_setup --keystone-user ${keystone_user} --keystone-group ${keystone_group}",
           path        => '/usr/bin',
@@ -1179,13 +1174,11 @@ running as a standalone service, or httpd for being run by a httpd server")
           require     => File[$fernet_key_repository],
           tag         => 'keystone-exec',
         }
-# Begin TA265938 - Fernet Key distribution and rotation
       } # end unless empty fernet_keys
     } else { # this node is not fernet_key_master so let's collect the exported fernet_key resources.
       File <<| tag == 'fernet_key' |>>
     }
   }
-# End TA265938 - Fernet Key distribution and rotation
 
   # Credential support
   if $enable_credential_setup {
